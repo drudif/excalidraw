@@ -8,6 +8,15 @@
 
 set -e
 
+# O default.conf da imagem reaparece em runtime mesmo tendo sido removido no
+# build. Como ele vem antes na ordem alfabetica do include, virava o servidor
+# padrao e atendia tudo sem senha. Remover aqui, antes do nginx subir, e o
+# unico jeito deterministico.
+if [ -f /etc/nginx/conf.d/default.conf ]; then
+    echo "removendo /etc/nginx/conf.d/default.conf (reapareceu em runtime)"
+    rm -f /etc/nginx/conf.d/default.conf
+fi
+
 if [ -z "$APP_PASSWORD" ]; then
     echo "ERRO: variavel APP_PASSWORD nao definida." >&2
     echo "      Defina no Railway antes de subir, senao a instancia ficaria publica." >&2
