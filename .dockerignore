@@ -2,6 +2,7 @@
 !.env.development
 !.env.production
 !.eslintrc.json
+!docker/
 !.npmrc
 !.prettierrc
 !excalidraw-app/
