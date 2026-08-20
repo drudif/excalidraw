@@ -21,3 +21,10 @@ printf '%s' "$APP_PASSWORD" | htpasswd -i -c -m /etc/nginx/.htpasswd "$APP_USER"
 chmod 644 /etc/nginx/.htpasswd
 
 echo "senha de acesso configurada para o usuario '$APP_USER'"
+
+# Diagnostico: quais arquivos de config o nginx realmente le, e se a diretiva
+# de senha entrou na config efetiva.
+echo "--- arquivos de config carregados pelo nginx ---"
+nginx -T 2>&1 | grep -E "^# configuration file" || echo "  (nginx -T falhou)"
+echo "--- diretivas de auth na config efetiva ---"
+nginx -T 2>&1 | grep -E "auth_basic|listen |server_name" || echo "  NENHUMA diretiva auth_basic encontrada"
