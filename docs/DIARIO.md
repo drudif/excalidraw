@@ -24,12 +24,25 @@ conectado e sem nenhum deploy. Nada tinha subido.
 - Dominio `excalidraw-production-f2a8.up.railway.app` com **target port 80**
   (nginx nao le a variavel PORT do Railway).
 
-**Por que existe `Dockerfile.railway`:** o Dockerfile do upstream comeca com
-`FROM --platform=${BUILDPLATFORM} node:24@sha256:...`. O builder do Railway nao
-define `BUILDPLATFORM`, entao vira `--platform=` vazio e o BuildKit aborta ao
-parsear — falha em ~5s sem escrever uma linha de log, o que torna o erro
-praticamente invisivel. Arquivo separado em vez de editar o original pra nao
-gerar conflito em todo merge do upstream.
+**Por que existe `Dockerfile.railway`:** o Dockerfile do upstream usa duas
+construcoes especificas do BuildKit que o builder do Railway nao aceita:
+`FROM --platform=${BUILDPLATFORM}` e `RUN --mount=type=cache`. Com qualquer uma
+delas o build morre em 5-15s **sem emitir uma unica linha de log** — o painel so
+diz "Failed to build an image. Please check the build logs", e os logs estao
+vazios. Foram 4 deploys falhos ate isolar. Removendo as duas (mais o digest
+pinado e o `npm_config_target_arch=${TARGETARCH}`, que ja era inerte porque
+TARGETARCH nunca foi declarado com ARG), o build passou em ~90s.
+
+Regra pratica: no Railway, build que falha em segundos e sem log = erro de
+parse do Dockerfile, nao erro da aplicacao.
+
+Arquivo separado em vez de editar o original pra nao gerar conflito em todo
+merge do upstream.
+
+**Resultado:** online em https://excalidraw-production-f2a8.up.railway.app —
+HTML, bundle JS (2,1 MB) e CSS servindo 200. Rota desconhecida da 404, o que e
+esperado: o Excalidraw usa hash routing (`#json=`, `#room=`), entao nao precisa
+de fallback SPA no nginx.
 
 **Sobre a infra da Excalidraw:** com o `.env.production` de fabrica, esta
 instancia usa os servidores publicos deles pra link compartilhado
@@ -40,7 +53,9 @@ Pra isolar de verdade seria preciso subir o `excalidraw-room` e um Firebase
 proprio.
 
 **Pendencias:** os 7 servicos-fantasma do detector de monorepo ainda estao no
-projeto (nao aparecem em `railway service list` porque nao tem instancia em
-`production`; so somem pelo painel). Branch `main` no GitHub, com so o commit de
-esqueleto do `novo-projeto.sh`, ainda existe e nao tem relacao com o historico
-do `master`.
+projeto. Nao aparecem em `railway service list` nem aceitam `service delete`
+porque nunca ganharam instancia no ambiente `production` — so somem pelo painel.
+
+**Nao-problema:** o branch `main` que parecia existir no GitHub era ref local
+desatualizado; o push do `novo-projeto.sh` nunca chegou no remote. O repo sempre
+teve so `master`.

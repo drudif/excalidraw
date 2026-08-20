@@ -39,9 +39,10 @@ yarn fix             # Auto-fix formatting and linting issues
   `git fetch upstream && git merge upstream/master`.
 - Deploy: Railway, servico `excalidraw`, builder Dockerfile via
   `RAILWAY_DOCKERFILE_PATH=Dockerfile.railway`.
-- **Use `Dockerfile.railway`, nao o `Dockerfile`.** O do upstream tem
-  `--platform=${BUILDPLATFORM}`, que o builder do Railway nao define — quebra em
-  ~5s sem gerar log.
+- **Use `Dockerfile.railway`, nao o `Dockerfile`.** O do upstream usa
+  `FROM --platform=${BUILDPLATFORM}` e `RUN --mount=type=cache`; o builder do
+  Railway rejeita as duas e o build morre em segundos **sem gerar log nenhum**.
+  Nao adicione sintaxe BuildKit nesse arquivo.
 - **Porta: 80.** nginx nao le `$PORT`; o dominio do Railway aponta pra 80.
 - **Variavel setada no painel do Railway nao chega no bundle.** As `VITE_APP_*`
   sao embutidas em build-time pelo Vite; o Dockerfile so declara `ARG NODE_ENV`.
