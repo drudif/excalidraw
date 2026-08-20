@@ -31,9 +31,25 @@ chmod 644 /etc/nginx/.htpasswd
 
 echo "senha de acesso configurada para o usuario '$APP_USER'"
 
-# Diagnostico: quais arquivos de config o nginx realmente le, e se a diretiva
-# de senha entrou na config efetiva.
-echo "--- arquivos de config carregados pelo nginx ---"
-nginx -T 2>&1 | grep -E "^# configuration file" || echo "  (nginx -T falhou)"
-echo "--- diretivas de auth na config efetiva ---"
-nginx -T 2>&1 | grep -E "auth_basic|listen |server_name" || echo "  NENHUMA diretiva auth_basic encontrada"
+# Trava de seguranca. Ja aconteceu de tudo aqui dar certo (script rodou, senha
+# gerada, config copiada, ate o auth_basic aparecendo no `nginx -T`) e mesmo
+# assim o site subir aberto, porque o default.conf tambem estava carregado e,
+# vindo antes na ordem alfabetica do include, era ele quem atendia. Falha
+# silenciosa de autenticacao e o pior modo de falha possivel, entao aqui a gente
+# confere as duas coisas e derruba o boot se qualquer uma falhar.
+CONFIG_EFETIVA=$(nginx -T 2>/dev/null || true)
+
+if ! echo "$CONFIG_EFETIVA" | grep -q "auth_basic_user_file"; then
+    echo "ERRO: auth_basic nao esta na config efetiva do nginx." >&2
+    exit 1
+fi
+
+# Este e o check que importa de verdade: nenhum outro server pode estar
+# carregado junto, senao ele pode atender no lugar do nosso, sem senha.
+if echo "$CONFIG_EFETIVA" | grep -q "^# configuration file /etc/nginx/conf.d/default.conf"; then
+    echo "ERRO: default.conf continua carregado e pode atender sem senha." >&2
+    exit 1
+fi
+
+echo "config efetiva do nginx:"
+echo "$CONFIG_EFETIVA" | grep -E "^# configuration file" | sed 's/^/  /'

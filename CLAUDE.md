@@ -44,6 +44,14 @@ yarn fix             # Auto-fix formatting and linting issues
   Railway rejeita as duas e o build morre em segundos **sem gerar log nenhum**.
   Nao adicione sintaxe BuildKit nesse arquivo.
 - **Porta: 80.** nginx nao le `$PORT`; o dominio do Railway aponta pra 80.
+- **Senha de acesso** via Basic Auth, gerada no boot a partir da variavel
+  `APP_PASSWORD` do Railway (usuario: `APP_USER`, padrao `excalidraw`). Sem a
+  variavel o container se recusa a subir, de proposito.
+- **Nao confie em remover o `default.conf` do nginx no build** — ele reaparece
+  em runtime e, por vir antes na ordem alfabetica do `include conf.d/*.conf`,
+  vira o servidor padrao e serve tudo **sem senha**, mesmo com a config certa
+  carregada logo depois. Quem remove de fato e o `docker/40-htpasswd.sh`, no
+  boot, que tambem derruba o container se isso regredir.
 - **Variavel setada no painel do Railway nao chega no bundle.** As `VITE_APP_*`
   sao embutidas em build-time pelo Vite; o Dockerfile so declara `ARG NODE_ENV`.
   Pra mudar endpoint, edite `.env.production` ou adicione `ARG`/`ENV` no

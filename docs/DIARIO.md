@@ -5,6 +5,37 @@ Entrada nova no topo, com data.
 
 ---
 
+## 2026-08-20 — senha de acesso (Basic Auth)
+
+Basic Auth no nginx, com o `.htpasswd` gerado no boot a partir da variavel
+`APP_PASSWORD` do Railway — a senha nunca entra no git nem na imagem. Sem a
+variavel o container se recusa a subir: site fora do ar e barulhento, site
+aberto em silencio nao.
+
+**A armadilha, que custou tres deploys:** remover o `/etc/nginx/conf.d/default.conf`
+no Dockerfile nao funciona. O arquivo reaparece no container em runtime. Como o
+nginx faz `include /etc/nginx/conf.d/*.conf` em ordem alfabetica, `default.conf`
+vinha antes de `excalidraw.conf`, virava o servidor padrao e atendia tudo sem
+senha — com a config correta carregada logo depois, inerte.
+
+O que tornou isso dificil foi o falso negativo em tudo que da pra checar de fora:
+o commit deployado era o certo, os `COPY` apareciam no log de build, o script de
+boot imprimia sucesso, o `.htpasswd` existia, o CDN estava desligado e o
+deployment ativo era o novo. Todos os sinais verdes, e o site aberto. Só um
+`nginx -T` no boot, listando os arquivos de config efetivamente carregados,
+mostrou os dois arquivos e explicou o caso.
+
+Fica um `nginx -T` de verificacao no boot que derruba o container se o
+`default.conf` voltar a ser carregado. Uma checagem so de "`auth_basic` esta na
+config?" nao serviria: no estado quebrado ela passava.
+
+**Licao geral:** autenticacao que falha aberta e silenciosa. Nao basta conferir
+que a config esta certa — tem que conferir a config *efetiva*, e testar de fora
+que sem credencial da 401. Foi o teste externo que pegou; a inspecao do build
+nao pegaria nunca.
+
+---
+
 ## 2026-08-20 — fork + deploy no Railway
 
 Fork de `excalidraw/excalidraw` em `drudif/excalidraw`, branch default `master`
