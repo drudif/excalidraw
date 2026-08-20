@@ -20,6 +20,22 @@ RUN yarn --frozen-lockfile --network-timeout 600000
 
 ARG NODE_ENV=production
 
+# Config do Firebase. Tem que ser build-time: o Vite congela as VITE_APP_* dentro
+# do bundle, entao variavel definida so no painel do Railway seria ignorada em
+# silencio. O Railway passa a variavel do servico como build arg por causa deste
+# ARG. Fica fora do git de proposito: o fork e publico e as rules do Excalidraw
+# sao `allow write: if true` — a config sozinha ja permite escrever no banco.
+ARG VITE_APP_FIREBASE_CONFIG
+
+# Falha alto em vez de baixo: sem a variavel, o Vite cairia no valor do
+# .env.production, que aponta pro Firebase da propria Excalidraw. O build passaria
+# e os desenhos iriam pro banco deles sem nenhum aviso.
+RUN if [ -z "$VITE_APP_FIREBASE_CONFIG" ]; then \
+        echo "ERRO: VITE_APP_FIREBASE_CONFIG vazia." >&2; \
+        echo "      Sem ela o build usaria o Firebase da Excalidraw, em silencio." >&2; \
+        exit 1; \
+    fi
+
 RUN yarn build:app:docker
 
 FROM nginx:stable-alpine-slim
