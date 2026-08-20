@@ -5,6 +5,37 @@ Entrada nova no topo, com data.
 
 ---
 
+## 2026-08-20 — persistencia online no Firebase proprio
+
+`VITE_APP_FIREBASE_CONFIG` passou a apontar pro projeto `excalidraw-b46b8`, via
+variavel do servico no Railway + `ARG` no Dockerfile.railway. Nao vai pro git: o
+fork e publico e as rules do Excalidraw sao abertas para escrita, entao commitar
+a config entregaria de graça o que a senha de acesso protege.
+
+O `ARG` e obrigatorio: sem ele o Vite ignora a variavel do painel sem erro
+nenhum, porque as `VITE_APP_*` sao congeladas no bundle em build-time. O build
+agora falha se a variavel estiver vazia — sem essa trava ele cairia no valor do
+`.env.production`, que aponta pro Firebase da propria Excalidraw, e os desenhos
+iriam pro banco deles sem aviso.
+
+**Verificado, nao presumido.** Bundle publicado: 9 ocorrencias de
+`excalidraw-b46b8`, e as 2 restantes de `excalidraw-room-persistence` sao o
+`VITE_APP_LIBRARY_BACKEND` (catalogo publico de bibliotecas de formas, sem dado
+nosso). Firestore pela API REST: escrita 200, leitura 200, **listagem 403** (o
+`allow list: if false` valendo, que e o que impede varrer o banco atras dos IDs
+das salas), remocao 200 seguida de 404. Documento de teste apagado.
+
+Sondar a API REST do Firestore com a apiKey distingue os estados sem precisar do
+console: "API has not been used" = banco nao criado; `PERMISSION_DENIED` = banco
+existe mas rules bloqueiam; `NOT_FOUND` num doc inexistente = rules valendo.
+
+**Como usar:** Compartilhar -> Colaboracao ao vivo -> Iniciar sessao. A URL
+gerada (`#room=<id>,<chave>`) e o documento persistente — guardar nos favoritos.
+Perdeu a URL, perdeu o desenho: a chave de criptografia so existe no fragmento
+dela, entao nem com acesso total ao Firestore da pra recuperar.
+
+---
+
 ## 2026-08-20 — senha de acesso (Basic Auth)
 
 Basic Auth no nginx, com o `.htpasswd` gerado no boot a partir da variavel

@@ -52,9 +52,14 @@ yarn fix             # Auto-fix formatting and linting issues
   vira o servidor padrao e serve tudo **sem senha**, mesmo com a config certa
   carregada logo depois. Quem remove de fato e o `docker/40-htpasswd.sh`, no
   boot, que tambem derruba o container se isso regredir.
-- **Variavel setada no painel do Railway nao chega no bundle.** As `VITE_APP_*`
-  sao embutidas em build-time pelo Vite; o Dockerfile so declara `ARG NODE_ENV`.
-  Pra mudar endpoint, edite `.env.production` ou adicione `ARG`/`ENV` no
-  Dockerfile.railway.
+- **Variavel do painel do Railway so chega no bundle se tiver `ARG` no
+  Dockerfile.railway.** As `VITE_APP_*` sao embutidas em build-time pelo Vite;
+  sem o `ARG` correspondente a variavel e ignorada sem erro nenhum.
+- **Persistencia: Firebase proprio** (`excalidraw-b46b8`), via
+  `VITE_APP_FIREBASE_CONFIG` na variavel do servico — fora do git, porque o fork
+  e publico e as rules sao `allow write: if true`. Build falha se ela faltar, pra
+  nao cair no Firebase da Excalidraw em silencio.
+- **Cena so persiste dentro de uma sala.** `saveToFirebase` retorna sem fazer
+  nada se nao houver `roomId`. Canvas solto em `/` fica sempre no localStorage.
 
 Historico de decisoes: `docs/DIARIO.md`
