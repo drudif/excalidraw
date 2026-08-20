@@ -32,3 +32,20 @@ yarn fix             # Auto-fix formatting and linting issues
 - Internal packages use path aliases (see `vitest.config.mts`)
 - Build system uses esbuild for packages, Vite for the app
 - TypeScript throughout with strict configuration
+
+## Fork / deploy (nao existe no upstream)
+
+- Fork de `excalidraw/excalidraw`. Branch default: `master`. Sincronizar com
+  `git fetch upstream && git merge upstream/master`.
+- Deploy: Railway, servico `excalidraw`, builder Dockerfile via
+  `RAILWAY_DOCKERFILE_PATH=Dockerfile.railway`.
+- **Use `Dockerfile.railway`, nao o `Dockerfile`.** O do upstream tem
+  `--platform=${BUILDPLATFORM}`, que o builder do Railway nao define — quebra em
+  ~5s sem gerar log.
+- **Porta: 80.** nginx nao le `$PORT`; o dominio do Railway aponta pra 80.
+- **Variavel setada no painel do Railway nao chega no bundle.** As `VITE_APP_*`
+  sao embutidas em build-time pelo Vite; o Dockerfile so declara `ARG NODE_ENV`.
+  Pra mudar endpoint, edite `.env.production` ou adicione `ARG`/`ENV` no
+  Dockerfile.railway.
+
+Historico de decisoes: `docs/DIARIO.md`

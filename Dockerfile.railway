@@ -1,0 +1,34 @@
+# Dockerfile usado no deploy do Railway.
+#
+# Diferencas em relacao ao Dockerfile do upstream:
+#   - sem `--platform=${BUILDPLATFORM}`: o builder do Railway nao define essa
+#     variavel, o FROM vira `--platform=` e o BuildKit aborta antes de rodar
+#     qualquer step (falha em ~5s, sem log nenhum).
+#   - sem `npm_config_target_arch=${TARGETARCH}`: TARGETARCH nunca foi declarado
+#     com ARG, entao ja expandia pra vazio e nao fazia nada.
+#   - com EXPOSE 80, pro Railway enxergar a porta do nginx.
+#
+# Fica em arquivo separado pra nao dar conflito ao sincronizar com o upstream.
+
+FROM node:24 AS build
+
+WORKDIR /opt/node_app
+
+COPY . .
+
+# nao ignorar dependencias opcionais:
+# Error: Cannot find module @rollup/rollup-linux-x64-gnu
+RUN --mount=type=cache,target=/root/.cache/yarn \
+    yarn --frozen-lockfile --network-timeout 600000
+
+ARG NODE_ENV=production
+
+RUN yarn build:app:docker
+
+FROM nginx:stable-alpine-slim
+
+COPY --from=build /opt/node_app/excalidraw-app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+HEALTHCHECK CMD wget -q -O /dev/null http://localhost || exit 1
